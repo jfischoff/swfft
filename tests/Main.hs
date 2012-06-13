@@ -1,3 +1,4 @@
+{-# LANGUAGE NoMonomorphismRestriction #-}
 module Main where
 import Test.Framework (defaultMain, testGroup, defaultMainWithArgs)
 import Test.Framework.Providers.HUnit
@@ -15,6 +16,9 @@ import Debug.Traced
 import Data.Complex hiding (phase)
 import qualified Numeric.FFT as N
 import Math.FFT.Approximate
+import Math.FFT.Numbers
+import Math.FFT.FFT
+import Debug.TracedInternal
 
 amp       = 1.0
 period    = 1.0
@@ -25,6 +29,74 @@ count     = 4
 
 
 main = defaultMain tests
+--main = do
+--    print "dft"
+--    countAll dft
+--    print "fft"
+--    countAll fft
+    
+--f :: (Floating a, Num a, RealFloat a, Show a) => Complex a -> 
+--    Complex a -> Complex a -> Complex a -> Complex a    
+f :: (Floating a, Num a, RealFloat a, Show a) =>  a -> 
+     a ->  a ->  a ->  a
+--f x_n k n l = x_n * (e ** ((negate one) * two * pi * i * k * n * (recip l)))    
+f x_n k n l = two * pi 
+    
+--main = do 
+--    print "dft" 
+--    print_ops dft
+--    print "fft"
+--    print_ops fft
+--    print "gconvert"
+--    putStr $ showAsExp $ 
+--        f (mkTraced 1.0) (mkTraced 1.0) (mkTraced 1.0) (mkTraced 1.0)
+            
+countAll f = mapM_ (print . traceAndCount . f) [
+                                        initial_test0,
+                                        initial_test,
+                                        initial_test_1,
+                                        initial_test_2,
+                                        initial_test_3, 
+                                        initial_test_4]
+
+countDFT = traceAndCount . dft
+countFFT = traceAndCount . fft
+    
+traceAndCount = count_ops . (\(a :+ b) -> tracedD a) . head
+    
+print_ops f = putStr $ unwords $ map (\(a :+ b) -> showAsExp a ++ " :+ " ++ showAsExp b) $ 
+    f $ (:[]) $ mkComplexTraced 1.0 
+
+
+mkTraced :: Double -> Traced Double
+mkTraced = traced
+
+
+mkComplexTraced :: Double -> Complex (Traced Double)
+mkComplexTraced = (\(a :+ b) -> traced a :+ traced b) . (:+ 2.0)
+
+
+initial_test0 = map mkComplexTraced initial_test0'
+initial_test0' = [1.0] :: [Double]
+
+
+initial_test = map mkComplexTraced initial_test'
+initial_test' = [1.0, 2.0] :: [Double]
+
+initial_test_1 = map mkComplexTraced initial_test_1'
+initial_test_1' = [1.0, 2.0, 3.0, 4.0] :: [Double]
+
+initial_test_2 = map mkComplexTraced initial_test_2'
+initial_test_2' = [1.0, 2.0, 3.0, 4.0, 2.0, 3.0, 4.0, 1.0] :: [Double]
+
+initial_test_3 = initial_test_2 ++ initial_test_2
+
+initial_test_4 = initial_test_3 ++ initial_test_3
+
+count_ops (Name _ _ t)     = count_ops t
+count_ops (Con _)          = 0
+count_ops (Apply _ _ _ ts) = (+1) $ sum $ map (count_ops) ts
+count_ops (Let _ t)        = count_ops t 
 
 tests = [
             testGroup "dft" [
@@ -79,28 +151,22 @@ test_getOdd  =  actual @?= expected where
     initial  = [0,1,2,3,4,5,6]
     
 test_combine = actual @?= expected where
-    actual   = combine evens odds index sign
-    expected = 1
-    evens = [1.0, 2.0]
-    odds  = [3.0, 4.0]
+    actual   = combine sign 2 evens odds index
+    expected = 1.0 :+ 0.0
+    evens = 1.0 :+ 0.0
+    odds  = 3.0 :+ 0.0
     index = 1
     sign  = 1
          
-test_top = actual @?= expected where
-    actual   = top [0.0, 2.0] [1.0, 3.0] 1
-    expected = 1
-     
-test_bottom = actual @?= expected where
-    actual = bottom [0.0, 2.0] [1.0, 3.0] 3
-    expected = 1
+
     
 test_fft = actual @?= expected where
     actual   = fft [0.0, 2.0]
     expected = [1.0, 2.0]
 
-test_decimate' = actual @?= expected where
-    actual   = decimate' [0.0, 2.0]
-    expected = [0.0]
+--test_decimate = actual @?= expected where
+--    actual   = decimate [0.0, 2.0]
+--    expected = [0.0]
 
 test_twiddle = actual @?= expected where
     actual   = twiddle [0.0, 2.0] [1.0, 3.0]
@@ -108,6 +174,8 @@ test_twiddle = actual @?= expected where
     
 --TODO verify that operations counts are what one would think
 --write the sliding window version
+
+--count_expression 
 
 
 
