@@ -11,13 +11,15 @@ import Test.QuickCheck.Checkers
 import Data.List
 import Data.Generics.Uniplate.Data
 import Control.Applicative ((<$>))    
-import Math.FFT.SlidingWindow
+--import Math.FFT.SlidingWindow
+import qualified Math.FFT.OptExpr as O
 import Debug.Traced
 import Data.Complex hiding (phase)
 import qualified Numeric.FFT as N
 import Math.FFT.Approximate
 import Math.FFT.Numbers
 import Math.FFT.FFT
+import Math.FFT.DFT
 import Debug.TracedInternal
 
 amp       = 1.0
@@ -104,7 +106,8 @@ tests = [
                 testProperty "dft and inverse dft roundtrip" prop_dft_inverse_dft 
             ],
             testGroup "fft" [
-                testProperty "N.fft equals the fft" prop_fft_equals_dft,
+                testProperty "N.fft equals the fft" prop_fft_equals_fft,
+                testProperty "fft equals dft"       prop_fft_equals_dft,
                 testCase "test_getBlah"   test_getBlah,
                 testCase "test_getEven"   test_getEven,
                 testCase "test_getOdd"    test_getOdd
@@ -132,8 +135,11 @@ instance (Arbitrary a) => Arbitrary (PowerOfTwoList a) where
         xs  <- vector (2 ^ len)
         return $ PowerOfTwoList xs 
 
+prop_fft_equals_fft :: PowerOfTwoList (Complex Double) -> Bool
+prop_fft_equals_fft (PowerOfTwoList xs) = N.fft xs =~= fft xs
+
 prop_fft_equals_dft :: PowerOfTwoList (Complex Double) -> Bool
-prop_fft_equals_dft (PowerOfTwoList xs) = N.fft xs =~= fft xs
+prop_fft_equals_dft (PowerOfTwoList xs) = fft xs =~= dft xs
 
 test_getBlah = actual @?= expected where
     actual   = get_blah (\x -> x > 3) initial
