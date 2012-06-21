@@ -15,6 +15,13 @@ dummyData0 = map (:+ (0.0 :: Double)) [0.0 .. 511.0]
 dummyData1 = map (:+ (0.0 :: Double)) [0.0 .. 1023.0]
 dummyData2 = map (:+ (0.0 :: Double)) [0.0 .. 2047.0]
 
+window count xs = take count
+--TODO make the window function
+--test performance
+--test error
+
+windowData0 = window 256 dummyData0
+
 myConfig = defaultConfig { cfgReport = Last $ Just "profile.html" }
 
 main = defaultMainWith myConfig (return ()) [
@@ -35,5 +42,10 @@ main = defaultMainWith myConfig (return ()) [
              , bench "N.dft" $ whnf N.dft dummyData2
              , bench "dft"   $ whnf dft   dummyData2
              , bench "fft"   $ whnf fft   dummyData2
+             ],
+             bgroup "sliding window 0" [
+                bench "fft"  $ whnf (map fft) (window 256 dummyData0),
+                bench "dft"  $ whnf (map dft) (window 256 dummyData0),
+                bench "sdft" $ whnf slideDFT  (window 256 dummyData0)
              ]
         ]

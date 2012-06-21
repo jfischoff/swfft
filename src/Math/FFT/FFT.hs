@@ -7,6 +7,7 @@ import Data.Complex
 import Math.FFT.Numbers
 import Debug.Trace
 import Debug.Trace.Utils
+import Math.FFT.Utils
 
 rlength :: (Floating a, Num a, RealFloat a, Show a) => [b] -> Complex a
 rlength = fromIntegral . length
@@ -14,12 +15,6 @@ rlength = fromIntegral . length
 indices :: (Floating a, Num a, RealFloat a, Show a) => [Complex a]
 indices = map fromIntegral [0..]
 
-isPowerOfTwo :: Int -> Bool
-isPowerOfTwo n
-	| 0	<- n		 = True
-	| 2	<- n		 = True
-	| n `mod` 2 == 0 = isPowerOfTwo (n `div` 2)
-	| otherwise		 = False
 
 -- | Split the even and the odds. Call fft on each
 --   Combine the results through twiddle
@@ -43,9 +38,9 @@ twiddle evens odds =  result where
 --   combine the results but scale the odd by the roots of unity
 combine :: (Floating a, Num a, RealFloat a, Show a) => Complex a -> Complex a -> Complex a 
     -> Complex a -> Complex a -> Complex a
-combine sign n ev od index = ev + sign * roots_of_unity n index * od
+combine sign n ev od index = ev + sign * rootsOfUnity n index * od
 	
-roots_of_unity n index = e ** (negate one * two * pi * i * index * recip n)
+
 	
 get_odd  = get_blah odd
 get_even = get_blah even

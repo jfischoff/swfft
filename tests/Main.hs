@@ -20,6 +20,7 @@ import Math.FFT.Approximate
 import Math.FFT.Numbers
 import Math.FFT.FFT
 import Math.FFT.DFT
+import Math.FFT.SDFT
 import Debug.TracedInternal
 
 amp       = 1.0
@@ -102,15 +103,17 @@ count_ops (Let _ t)        = count_ops t
 
 tests = [
             testGroup "dft" [
-                testProperty "dft equals N.dft" prop_dft_equals_n_dft,
-                testProperty "dft and inverse dft roundtrip" prop_dft_inverse_dft 
+                --testProperty "dft equals N.dft" prop_dft_equals_n_dft,
+                --testProperty "dft and inverse dft roundtrip" prop_dft_inverse_dft 
             ],
             testGroup "fft" [
                 testProperty "N.fft equals the fft" prop_fft_equals_fft,
                 testProperty "fft equals dft"       prop_fft_equals_dft,
+                testProperty "sdft equals dft"      prop_sdft_equals_dft,
                 testCase "test_getBlah"   test_getBlah,
                 testCase "test_getEven"   test_getEven,
                 testCase "test_getOdd"    test_getOdd
+                --testCase "test_sdft_0"    test_sdft_0
                 --testCase "test_combine"   test_combine,
                 --testCase "test_top"       test_top,
                 --testCase "test_bottom"    test_bottom,
@@ -140,6 +143,13 @@ prop_fft_equals_fft (PowerOfTwoList xs) = N.fft xs =~= fft xs
 
 prop_fft_equals_dft :: PowerOfTwoList (Complex Double) -> Bool
 prop_fft_equals_dft (PowerOfTwoList xs) = fft xs =~= dft xs
+
+--TODO to test this I need to start with a dft and then add one value and it should be the 
+--same as doing two dfts
+prop_sdft_equals_dft :: [Complex Double] -> Bool
+prop_sdft_equals_dft     [] = True
+prop_sdft_equals_dft (x:[]) = True
+prop_sdft_equals_dft (x:xs) = sdft (dft xs) (head xs) x =~= dft ((tail xs) ++ [x])
 
 test_getBlah = actual @?= expected where
     actual   = get_blah (\x -> x > 3) initial
@@ -177,7 +187,14 @@ test_fft = actual @?= expected where
 test_twiddle = actual @?= expected where
     actual   = twiddle [0.0, 2.0] [1.0, 3.0]
     expected = [0.0, 1.0]
-    
+
+{-
+test_sdft_0 = actual @?= expected where
+    actual   = sdft (fft initial) (head initial) new
+    expected = fft $ (tail initial) ++ [new]
+    initial = [1.0 :+ 0.0,1.0 :+ 0.0]
+    new     = 2.0 :+ 0.0
+-}    
 --TODO verify that operations counts are what one would think
 --write the sliding window version
 
