@@ -3,7 +3,7 @@ module Main where
 import Test.Framework (defaultMain, testGroup, defaultMainWithArgs)
 import Test.Framework.Providers.HUnit
 import Test.Framework.Providers.QuickCheck2 (testProperty)
-import Test.QuickCheck
+import Test.QuickCheck hiding (reason)
 import Test.HUnit
 import Debug.Trace.Helpers
 import Debug.Trace
@@ -21,7 +21,12 @@ import Math.FFT.Numbers
 import Math.FFT.FFT
 import Math.FFT.DFT
 import Math.FFT.SDFT
+import qualified Math.FFT.NTT as NT
 import Debug.TracedInternal
+import Data.List
+import Math.NumberTheory.Moduli
+import Test.QuickCheck.Property
+ 
 
 amp       = 1.0
 period    = 1.0
@@ -101,15 +106,18 @@ count_ops (Con _)          = 0
 count_ops (Apply _ _ _ ts) = (+1) $ sum $ map (count_ops) ts
 count_ops (Let _ t)        = count_ops t 
 
+slideWindow' = slideWindow dft sdft
+
 tests = [
             testGroup "dft" [
                 --testProperty "dft equals N.dft" prop_dft_equals_n_dft,
                 --testProperty "dft and inverse dft roundtrip" prop_dft_inverse_dft 
             ],
             testGroup "fft" [
-                testProperty "N.fft equals the fft" prop_fft_equals_fft,
-                testProperty "fft equals dft"       prop_fft_equals_dft,
-                testProperty "sdft equals dft"      prop_sdft_equals_dft,
+                --testProperty "N.fft equals the fft" prop_fft_equals_fft,
+                --testProperty "fft equals dft"       prop_fft_equals_dft,
+                --testProperty "sdft equals dft"      prop_sdft_equals_dft,
+                testProperty "ntt dft and idft are inverses" prop_ndft_nidft_inverse,
                 testCase "test_getBlah"   test_getBlah,
                 testCase "test_getEven"   test_getEven,
                 testCase "test_getOdd"    test_getOdd
@@ -195,15 +203,29 @@ test_sdft_0 = actual @?= expected where
     initial = [1.0 :+ 0.0,1.0 :+ 0.0]
     new     = 2.0 :+ 0.0
 -}    
---TODO verify that operations counts are what one would think
---write the sliding window version
+ --count_expression 
 
---count_expression 
+errorCompare :: (RealFloat a, Show a) => Int -> [Complex a] -> [a]
+errorCompare count xs = result where
+    result = zipWith sumResiduals sdftResults dftResults
+    sdftResults = slideWindow' count xs
+    dftResults  = map dft $ window count xs
+    
+sumResiduals xs ys = sum . map sqr $ zipWith (-) xs ys
 
+sqr (x :+ y) = x * x + y * y
 
-
-
-
+--prop_ndft_nidft_inverse :: Gen Test.QuickCheck.Property.Result
+prop_ndft_nidft_inverse = do
+    n <- arbitrary
+    let m = 17
+    NT.hasRoot m n ==> do 
+        xs' <- map (flip mod m) <$> vector (fromIntegral n)
+        case  (NT.idft m =<< NT.dft m xs') of
+                Just ys -> if ys == xs' 
+                                then return succeeded
+                                else return failed { reason = show xs' }
+                Nothing -> return failed
 
 
 

@@ -26,3 +26,29 @@ sdft :: (RealFloat a) => [Complex a] -> Complex a -> Complex a -> [Complex a]
 sdft spectrum oldFirst newEnd = zipWith shift spectrum (rootsOfUnity n) where
     shift kThSpectrum root = (kThSpectrum - oldFirst + newEnd) * root
     n = rlength spectrum
+
+slideWindow :: (RealFloat a) 
+            => ([Complex a] -> [Complex a])
+            -> ([Complex a] -> Complex a -> Complex a -> [Complex a]) 
+            -> Int
+            -> [Complex a] -> [[Complex a]]
+slideWindow fft f count xs = result where
+    result  = scanl (\i (o, n) -> f i o n) initial $ zip xs rest
+    initial = fft $ take count xs
+    rest    = drop count xs 
+
+window :: Int -> [a] -> [[a]]
+window count xs | count > length xs = []
+window count xs | otherwise = take count xs : window count (tail xs)
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
